@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCubeStore } from '@/lib/store';
-import { Bot, Calendar, Box, History, Loader, Sprout, Trophy } from 'lucide-react';
+import { Bot, Calendar, Box, History, Loader, Sprout, Trophy, Palette, Undo } from 'lucide-react';
 import React, { useState } from 'react';
 import { generateSolution } from '@/ai/flows/generate-solution';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +16,16 @@ import { generateScramble } from '@/lib/cube-utils';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
 import { Textarea } from './ui/textarea';
+import { Input } from './ui/input';
+
+const faceMap = [
+  { id: 'U', name: 'Up' },
+  { id: 'D', name: 'Down' },
+  { id: 'L', name: 'Left' },
+  { id: 'R', name: 'Right' },
+  { id: 'F', name: 'Front' },
+  { id: 'B', name: 'Back' },
+];
 
 export function SidebarContent() {
   const { 
@@ -26,6 +37,9 @@ export function SidebarContent() {
     setSolvingMethod,
     scrambleHistory,
     addScrambleToHistory,
+    colorScheme,
+    setColorScheme,
+    resetColorScheme,
   } = useCubeStore();
   const { toast } = useToast();
   const [scrambleInput, setScrambleInput] = useState('');
@@ -35,7 +49,6 @@ export function SidebarContent() {
       toast({ title: 'No Scramble', description: 'Please enter a scramble first.', variant: 'destructive' });
       return;
     }
-    // Very basic WCA validation regex
     const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)(?:\s+(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?))*$/;
     if (!wcaRegex.test(scrambleInput.trim())) {
       toast({ title: 'Invalid Scramble', description: 'Please check your WCA notation.', variant: 'destructive' });
@@ -49,7 +62,6 @@ export function SidebarContent() {
     try {
       const result = await generateSolution({ scramble: scrambleInput, solvingMethod });
       setSolution(result.solution.split(' '));
-      // A solved cube is the base for applying a scramble solution
       setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
       setStatus('solved');
       addScrambleToHistory(scrambleInput);
@@ -64,7 +76,7 @@ export function SidebarContent() {
   const handleScramble = () => {
     const newScramble = generateScramble();
     setScrambleInput(newScramble);
-    setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'); // Reset to solved then apply scramble
+    setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
     setStatus('scrambled');
     addScrambleToHistory(newScramble);
   };
@@ -163,6 +175,33 @@ export function SidebarContent() {
         </Tabs>
         <div className="px-4 space-y-4">
             <Separator />
+            <Card className="mt-4">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5 text-accent" />Color Scheme</CardTitle>
+                    <CardDescription>Customize the cube's face colors.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        {faceMap.map(face => (
+                            <div key={face.id} className="grid gap-1.5">
+                                <Label>{face.name} ({face.id})</Label>
+                                <div className="flex items-center gap-2">
+                                     <Input 
+                                        type="color" 
+                                        value={colorScheme[face.id as keyof typeof colorScheme]} 
+                                        onChange={(e) => setColorScheme({ [face.id]: e.target.value })}
+                                        className="p-1 h-8 w-8"
+                                    />
+                                    <span className="font-mono text-muted-foreground">{colorScheme[face.id as keyof typeof colorScheme]}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={resetColorScheme} className="w-full">
+                        <Undo className="w-4 h-4 mr-2" /> Reset to WCA Defaults
+                    </Button>
+                </CardContent>
+            </Card>
             <div className="space-y-2">
                 <Label>Cube Type</Label>
                 <Select defaultValue="3x3">
@@ -173,19 +212,6 @@ export function SidebarContent() {
                         <SelectItem value="2x2" disabled>2x2x2</SelectItem>
                         <SelectItem value="3x3">3x3x3</SelectItem>
                         <SelectItem value="4x4" disabled>4x4x4</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label>Cube Theme</Label>
-                <Select defaultValue="classic">
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select cube theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="classic">Classic</SelectItem>
-                        <SelectItem value="pastel" disabled>Pastel</SelectItem>
-                        <SelectItem value="high-contrast" disabled>High Contrast</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

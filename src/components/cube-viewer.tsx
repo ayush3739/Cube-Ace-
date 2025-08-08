@@ -1,49 +1,38 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
-import { useCubeStore } from '@/lib/store';
+import { useCubeStore, ColorScheme } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward, Eye, EyeOff } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward, Eye, EyeOff, Info } from 'lucide-react';
 import { Progress } from './ui/progress';
-
-const colors = {
-  U: 0xffffff, // White
-  D: 0xffd500, // Yellow
-  F: 0x009b48, // Green
-  B: 0x0045ad, // Blue
-  R: 0xb71234, // Red
-  L: 0xff5800, // Orange
-  border: 0x1a1a1a,
-  inside: 0x333333,
-};
-
-const stickerMaterials = {
-    U: new THREE.MeshStandardMaterial({ color: colors.U, roughness: 0.2, metalness: 0.1 }),
-    D: new THREE.MeshStandardMaterial({ color: colors.D, roughness: 0.2, metalness: 0.1 }),
-    F: new THREE.MeshStandardMaterial({ color: colors.F, roughness: 0.2, metalness: 0.1 }),
-    B: new THREE.MeshStandardMaterial({ color: colors.B, roughness: 0.2, metalness: 0.1 }),
-    R: new THREE.MeshStandardMaterial({ color: colors.R, roughness: 0.2, metalness: 0.1 }),
-    L: new THREE.MeshStandardMaterial({ color: colors.L, roughness: 0.2, metalness: 0.1 }),
-};
 
 const PI_2 = Math.PI / 2;
 
+const createStickerMaterials = (colorScheme: ColorScheme) => ({
+    U: new THREE.MeshStandardMaterial({ color: colorScheme.U, roughness: 0.2, metalness: 0.1 }),
+    D: new THREE.MeshStandardMaterial({ color: colorScheme.D, roughness: 0.2, metalness: 0.1 }),
+    F: new THREE.MeshStandardMaterial({ color: colorScheme.F, roughness: 0.2, metalness: 0.1 }),
+    B: new THREE.MeshStandardMaterial({ color: colorScheme.B, roughness: 0.2, metalness: 0.1 }),
+    R: new THREE.MeshStandardMaterial({ color: colorScheme.R, roughness: 0.2, metalness: 0.1 }),
+    L: new THREE.MeshStandardMaterial({ color: colorScheme.L, roughness: 0.2, metalness: 0.1 }),
+});
+
 export function CubeViewer() {
   const mountRef = useRef<HTMLDivElement>(null);
-  const { solution, setStatus } = useCubeStore();
+  const { solution, setStatus, colorScheme } = useCubeStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [solutionVisible, setSolutionVisible] = useState(false);
 
-  // This effect will run once to set up the Three.js scene
+  const stickerMaterials = useMemo(() => createStickerMaterials(colorScheme), [colorScheme]);
+
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Scene setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
     camera.position.set(4, 4, 4);
@@ -53,20 +42,13 @@ export function CubeViewer() {
     renderer.setPixelRatio(window.devicePixelRatio);
     mountRef.current.appendChild(renderer.domElement);
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
     directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
     
-    // Cube creation (placeholder)
     const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5);
-    const material = new THREE.MeshStandardMaterial({
-        vertexColors: false,
-        roughness: 0.2,
-        metalness: 0.1,
-    });
     
     const materials = [
         stickerMaterials.R, // right
@@ -80,7 +62,6 @@ export function CubeViewer() {
     const cube = new THREE.Mesh(geometry, materials);
     scene.add(cube);
 
-    // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
       cube.rotation.x += 0.005;
@@ -89,7 +70,6 @@ export function CubeViewer() {
     };
     animate();
 
-    // Handle resize
     const handleResize = () => {
       if (!mountRef.current) return;
       camera.aspect = mountRef.current.clientWidth / mountRef.current.clientHeight;
@@ -98,14 +78,13 @@ export function CubeViewer() {
     };
     window.addEventListener('resize', handleResize);
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
       if (mountRef.current) {
         mountRef.current.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [stickerMaterials]); // Re-run effect if materials change
 
   const handlePlayPause = () => setIsPlaying(!isPlaying);
 
@@ -114,10 +93,12 @@ export function CubeViewer() {
   }, [solution.length]);
   
   const handlePrev = () => setCurrentMoveIndex(i => Math.max(i - 1, 0));
+  
   const handleReset = () => {
     setCurrentMoveIndex(0);
     setIsPlaying(false);
   };
+
   const handleFinish = () => {
     setCurrentMoveIndex(solution.length);
     setIsPlaying(false);
@@ -130,21 +111,29 @@ export function CubeViewer() {
         handleNext();
       }, 500);
     }
-    if (currentMoveIndex === solution.length) {
+    if (currentMoveIndex === solution.length && solution.length > 0) {
       setIsPlaying(false);
       setStatus('solved');
     }
     return () => clearInterval(interval);
   }, [isPlaying, currentMoveIndex, solution.length, setStatus, handleNext]);
 
-
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-4">
       <Card className="flex-1 relative overflow-hidden bg-card/70">
         <div ref={mountRef} className="w-full h-full" />
-        <div className="absolute top-2 right-2 text-xs font-mono text-muted-foreground bg-black/10 px-2 py-1 rounded">
-          3D view will be implemented here
-        </div>
+         <Card className="absolute bottom-2 left-2 p-3 bg-card/80 backdrop-blur-sm max-w-xs">
+            <h4 className="font-bold flex items-center gap-2 mb-2"><Info className="w-4 h-4"/>Cube Orientation</h4>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-sm">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.F}}/>Front (F)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.B}}/>Back (B)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.U}}/>Up (U)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.D}}/>Down (D)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.L}}/>Left (L)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.R}}/>Right (R)</div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Hold the cube with the Front face towards you and the Up face on top.</p>
+        </Card>
       </Card>
       {solution.length > 0 && (
         <Card className="p-2">

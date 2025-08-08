@@ -1,12 +1,30 @@
+
 'use client';
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-type AppStatus = 'idle' | 'ready' | 'solving' | 'solved' | 'scrambled';
+type AppStatus = 'idle' | 'ready' | 'solving' | 'solved' | 'scrambled' | 'detecting';
 type SolvingMethod = 'beginner' | 'advanced';
 type CubeType = '2x2' | '3x3' | '4x4';
-type CubeTheme = 'classic' | 'pastel' | 'high-contrast';
+
+export interface ColorScheme {
+  U: string;
+  D: string;
+  F: string;
+  B: string;
+  R: string;
+  L: string;
+}
+
+const defaultColors: ColorScheme = {
+  U: '#ffffff', // White
+  D: '#ffd500', // Yellow
+  F: '#009b48', // Green
+  B: '#0045ad', // Blue
+  R: '#b71234', // Red
+  L: '#ff5800', // Orange
+};
 
 interface CubeState {
   status: AppStatus;
@@ -14,7 +32,7 @@ interface CubeState {
   solution: string[];
   solvingMethod: SolvingMethod;
   cubeType: CubeType;
-  cubeTheme: CubeTheme;
+  colorScheme: ColorScheme;
   scrambleHistory: string[];
   
   setStatus: (status: AppStatus) => void;
@@ -22,7 +40,8 @@ interface CubeState {
   setSolution: (solution: string[]) => void;
   setSolvingMethod: (method: SolvingMethod) => void;
   setCubeType: (type: CubeType) => void;
-  setCubeTheme: (theme: CubeTheme) => void;
+  setColorScheme: (scheme: Partial<ColorScheme>) => void;
+  resetColorScheme: () => void;
   addScrambleToHistory: (scramble: string) => void;
 }
 
@@ -34,7 +53,7 @@ export const useCubeStore = create<CubeState>()(
       solution: [],
       solvingMethod: 'beginner',
       cubeType: '3x3',
-      cubeTheme: 'classic',
+      colorScheme: defaultColors,
       scrambleHistory: [],
 
       setStatus: (status) => set({ status }),
@@ -42,9 +61,10 @@ export const useCubeStore = create<CubeState>()(
       setSolution: (solution) => set({ solution }),
       setSolvingMethod: (method) => set({ solvingMethod: method }),
       setCubeType: (type) => set({ cubeType: type }),
-      setCubeTheme: (theme) => set({ cubeTheme: theme }),
+      setColorScheme: (scheme) => set((state) => ({ colorScheme: { ...state.colorScheme, ...scheme } })),
+      resetColorScheme: () => set({ colorScheme: defaultColors }),
       addScrambleToHistory: (scramble) => {
-        const history = [scramble, ...get().scrambleHistory];
+        const history = [scramble, ...get().scrambleHistory].filter((s, i, a) => a.indexOf(s) === i);
         if (history.length > 5) {
           history.pop();
         }
@@ -57,7 +77,7 @@ export const useCubeStore = create<CubeState>()(
       partialize: (state) => ({ 
         solvingMethod: state.solvingMethod,
         cubeType: state.cubeType,
-        cubeTheme: state.cubeTheme,
+        colorScheme: state.colorScheme,
         scrambleHistory: state.scrambleHistory
       }),
     }
