@@ -1,21 +1,21 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCubeStore } from '@/lib/store';
-import { Bot, Calendar, Box, FileImage, History, Loader, Sprout, Trophy, Upload } from 'lucide-react';
+import { Bot, Calendar, Box, History, Loader, Sprout, Trophy } from 'lucide-react';
 import React, { useState } from 'react';
 import { generateSolution } from '@/ai/flows/generate-solution';
-import { detectCubeState } from '@/ai/flows/detect-cube-state';
 import { useToast } from '@/hooks/use-toast';
 import { generateScramble } from '@/lib/cube-utils';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
+import { Textarea } from './ui/textarea';
 
 export function SidebarContent() {
   const { 
@@ -23,58 +23,38 @@ export function SidebarContent() {
     setStatus, 
     setSolution,
     status, 
-    cubeConfig, 
     solvingMethod,
     setSolvingMethod,
     scrambleHistory,
     addScrambleToHistory,
   } = useCubeStore();
   const { toast } = useToast();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [scrambleInput, setScrambleInput] = useState('');
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
-    }
-  };
-
-  const handleDetectState = async () => {
-    if (!selectedFile) {
-      toast({ title: 'No file selected', description: 'Please choose an image of your cube.', variant: 'destructive' });
-      return;
-    }
-    setStatus('detecting');
-    toast({ title: 'Detecting Cube State...', description: 'The AI is analyzing your image.' });
-    
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const photoDataUri = e.target?.result as string;
-        const result = await detectCubeState({ photoDataUri });
-        setCubeConfig(result.cubeState);
-        setStatus('ready');
-        toast({ title: 'Detection Successful!', description: 'Cube state has been loaded.', variant: 'default' });
-      } catch (error) {
-        console.error(error);
-        setStatus('idle');
-        toast({ title: 'Detection Failed', description: 'Could not determine cube state from the image.', variant: 'destructive' });
-      }
-    };
-    reader.readAsDataURL(selectedFile);
-  };
-  
   const handleGenerateSolution = async () => {
-    if (!cubeConfig) {
-      toast({ title: 'No Cube State', description: 'Please detect or enter a cube state first.', variant: 'destructive' });
+    if (!scrambleInput) {
+      toast({ title: 'No Scramble', description: 'Please enter a scramble first.', variant: 'destructive' });
       return;
     }
+    // WCA validation regex
+    const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)\s*$/;
+    const moves = scrambleInput.trim().split(/\s+/);
+    const isValid = moves.every(move => wcaRegex.test(move));
+
+    if (!isValid) {
+      toast({ title: 'Invalid Scramble', description: 'Please check your WCA notation.', variant: 'destructive' });
+      return;
+    }
+
     setStatus('solving');
     setSolution([]);
     toast({ title: 'Generating Solution...', description: `Using the ${solvingMethod} method.` });
 
     try {
-      const result = await generateSolution({ cubeConfiguration: cubeConfig, solvingMethod });
+      const result = await generateSolution({ scramble: scrambleInput, solvingMethod });
       setSolution(result.solution.split(' '));
+      // A solved cube is the base for applying a scramble solution
+      setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
       setStatus('solved');
       toast({ title: 'Solution Found!', description: 'The solution is ready to be animated.', variant: 'default' });
     } catch (error) {
@@ -90,7 +70,7 @@ export function SidebarContent() {
     setSolution(newScramble.split(' '));
     addScrambleToHistory(newScramble);
     setStatus('scrambled');
-  }
+  };
 
   return (
     <div className="flex h-full flex-col text-sm">
@@ -111,26 +91,20 @@ export function SidebarContent() {
           <TabsContent value="solve" className="space-y-4 mt-4">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><FileImage className="text-accent w-5 h-5"/>Automated State Input</CardTitle>
-                    <CardDescription>Upload a photo of your cube and let our AI detect its state.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="picture">Cube Photo</Label>
-                        <Input id="picture" type="file" accept="image/*" onChange={handleFileChange} />
-                    </div>
-                    <Button onClick={handleDetectState} disabled={status === 'detecting' || !selectedFile} className="w-full">
-                        {status === 'detecting' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        Detect State
-                    </Button>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Sprout className="text-accent w-5 h-5"/>AI Solver</CardTitle>
-                    <CardDescription>Choose your preferred solving method and generate a solution.</CardDescription>
+                    <CardDescription>Enter a scramble, choose a method, and get the solution.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="grid w-full gap-1.5">
+                      <Label htmlFor="scramble">WCA Scramble</Label>
+                      <Textarea 
+                        id="scramble" 
+                        placeholder="e.g., R U R' U' F2 D'..."
+                        value={scrambleInput}
+                        onChange={(e) => setScrambleInput(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
                     <RadioGroup value={solvingMethod} onValueChange={(val: 'beginner' | 'advanced') => setSolvingMethod(val)}>
                         <Label>Solving Method</Label>
                         <div className="flex gap-4 pt-2">
@@ -144,7 +118,7 @@ export function SidebarContent() {
                           </div>
                         </div>
                     </RadioGroup>
-                    <Button onClick={handleGenerateSolution} disabled={status === 'solving' || !cubeConfig} className="w-full">
+                    <Button onClick={handleGenerateSolution} disabled={status === 'solving' || !scrambleInput} className="w-full">
                         {status === 'solving' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                         Generate Solution
                     </Button>
@@ -156,7 +130,7 @@ export function SidebarContent() {
               <CardHeader>
                 <CardTitle>Practice Mode</CardTitle>
                 <CardDescription>Scramble the cube and time your solves.</CardDescription>
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-4">
                 <Button onClick={handleScramble} className="w-full">Scramble Cube</Button>
                 <Separator/>

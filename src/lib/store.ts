@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-type AppStatus = 'idle' | 'detecting' | 'ready' | 'solving' | 'solved' | 'scrambled';
+type AppStatus = 'idle' | 'ready' | 'solving' | 'solved' | 'scrambled';
 type SolvingMethod = 'beginner' | 'advanced';
 type CubeType = '2x2' | '3x3' | '4x4';
 type CubeTheme = 'classic' | 'pastel' | 'high-contrast';

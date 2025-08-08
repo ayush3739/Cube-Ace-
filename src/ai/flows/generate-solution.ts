@@ -12,10 +12,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateSolutionInputSchema = z.object({
-  cubeConfiguration: z
+  scramble: z
     .string()
     .describe(
-      'A string representing the Rubik\'s Cube configuration.  The format should be a string of 54 characters, representing the colors of each facelet. The order is U(9) R(9) F(9) D(9) L(9) B(9), where each face is read row by row, and the colors are represented by the letters U(p), R(ed), F(ront), D(own), L(eft), B(ack). Example: UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
+      'A string representing the Rubik\'s Cube scramble in WCA notation. Example: R U R\' U\''
     ),
   solvingMethod: z
     .enum(['beginner', 'advanced'])
@@ -38,15 +38,15 @@ const prompt = ai.definePrompt({
   name: 'generateSolutionPrompt',
   input: {schema: GenerateSolutionInputSchema},
   output: {schema: GenerateSolutionOutputSchema},
-  prompt: `You are an expert Rubik\'s Cube solver.  Given the following cube configuration and solving method, generate an efficient solution.
+  prompt: `You are an expert Rubik's Cube solver. Given the following scramble and solving method, generate an efficient solution. A solved cube state is UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB.
 
-Cube Configuration:
-{{cubeConfiguration}}
+Scramble:
+{{scramble}}
 
 Solving Method:
 {{solvingMethod}}
 
-Solution:`, // Note: No Handlebars in prompt!
+Solution:`,
 });
 
 const generateSolutionFlow = ai.defineFlow(
