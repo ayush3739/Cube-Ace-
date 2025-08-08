@@ -16,20 +16,20 @@ export type Cube = Cubie[];
 export function getInitialCube(): Cube {
     const cube: Cube = Array(27).fill(null).map(() => ({}));
     
-    // Assign colors based on position for a solved state
-    // Top layer (U face is white)
-    for (let i = 18; i < 27; i++) cube[i].U = 'W';
-    // Bottom layer (D face is yellow)
-    for (let i = 0; i < 9; i++) cube[i].D = 'Y';
-    // Front layer (F face is green)
-    for (let i = 0; i < 27; i += 9) for (let j = 0; j < 3; j++) cube[i + j].F = 'G';
-    // Back layer (B face is blue)
-    for (let i = 6; i < 27; i += 9) for (let j = 0; j < 3; j++) cube[i + j].B = 'B';
-    // Right layer (R face is red)
-    for (let i = 2; i < 27; i += 3) cube[i].R = 'R';
-    // Left layer (L face is orange)
-    for (let i = 0; i < 27; i += 3) cube[i].L = 'O';
-
+    // This logic ensures every visible face of each cubie gets a color.
+    for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+            for (let z = -1; z <= 1; z++) {
+                const index = (z + 1) * 9 + (y + 1) * 3 + (x + 1);
+                if (x === 1) cube[index].R = 'R';   // Right face
+                if (x === -1) cube[index].L = 'O';  // Left face
+                if (y === 1) cube[index].U = 'W';   // Up face
+                if (y === -1) cube[index].D = 'Y';  // Down face
+                if (z === 1) cube[index].F = 'G';   // Front face
+                if (z === -1) cube[index].B = 'B';  // Back face
+            }
+        }
+    }
     return cube;
 }
 
