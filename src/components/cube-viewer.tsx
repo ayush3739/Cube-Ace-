@@ -15,12 +15,12 @@ import { applyMove, getInitialCube, Cube } from '@/lib/cube-utils';
 const PI_2 = Math.PI / 2;
 
 const createStickerMaterials = (colorScheme: ColorScheme) => ({
-    U: new THREE.MeshBasicMaterial({ color: colorScheme.U }),
-    D: new THREE.MeshBasicMaterial({ color: colorScheme.D }),
-    F: new THREE.MeshBasicMaterial({ color: colorScheme.F }),
-    B: new THREE.MeshBasicMaterial({ color: colorScheme.B }),
-    R: new THREE.MeshBasicMaterial({ color: colorScheme.R }),
-    L: new THREE.MeshBasicMaterial({ color: colorScheme.L }),
+    W: new THREE.MeshBasicMaterial({ color: colorScheme.U }), // White on Up face
+    Y: new THREE.MeshBasicMaterial({ color: colorScheme.D }), // Yellow on Down face
+    G: new THREE.MeshBasicMaterial({ color: colorScheme.F }), // Green on Front face
+    B: new THREE.MeshBasicMaterial({ color: colorScheme.B }), // Blue on Back face
+    R: new THREE.MeshBasicMaterial({ color: colorScheme.R }), // Red on Right face
+    O: new THREE.MeshBasicMaterial({ color: colorScheme.L }), // Orange on Left face
     Core: new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.5, metalness: 0.2 }),
 });
 
@@ -229,11 +229,11 @@ export function CubeViewer() {
          <Card className="absolute bottom-2 left-2 p-3 bg-card/80 backdrop-blur-sm max-w-xs">
             <h4 className="font-bold flex items-center gap-2 mb-2"><Info className="w-4 h-4"/>Cube Orientation</h4>
             <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-sm">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.F}}/>Front (F)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.F}}/>Front (G)</div>
                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.B}}/>Back (B)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.U}}/>Up (U)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.D}}/>Down (D)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.L}}/>Left (L)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.U}}/>Up (W)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.D}}/>Down (Y)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.L}}/>Left (O)</div>
                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor: colorScheme.R}}/>Right (R)</div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Hold the cube with the Front face towards you and the Up face on top.</p>
@@ -288,3 +288,5 @@ export function CubeViewer() {
     </div>
   );
 }
+
+    
