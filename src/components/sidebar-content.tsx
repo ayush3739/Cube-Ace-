@@ -36,12 +36,9 @@ export function SidebarContent() {
       toast({ title: 'No Scramble', description: 'Please enter a scramble first.', variant: 'destructive' });
       return;
     }
-    // WCA validation regex
-    const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)\s*$/;
-    const moves = scrambleInput.trim().split(/\s+/);
-    const isValid = moves.every(move => wcaRegex.test(move));
-
-    if (!isValid) {
+    // Very basic WCA validation regex
+    const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)(?:\s+(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?))*$/;
+    if (!wcaRegex.test(scrambleInput.trim())) {
       toast({ title: 'Invalid Scramble', description: 'Please check your WCA notation.', variant: 'destructive' });
       return;
     }
@@ -56,6 +53,7 @@ export function SidebarContent() {
       // A solved cube is the base for applying a scramble solution
       setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
       setStatus('solved');
+      addScrambleToHistory(scrambleInput);
       toast({ title: 'Solution Found!', description: 'The solution is ready to be animated.', variant: 'default' });
     } catch (error) {
       console.error(error);
@@ -66,10 +64,10 @@ export function SidebarContent() {
 
   const handleScramble = () => {
     const newScramble = generateScramble();
+    setScrambleInput(newScramble);
     setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'); // Reset to solved then apply scramble
-    setSolution(newScramble.split(' '));
-    addScrambleToHistory(newScramble);
     setStatus('scrambled');
+    addScrambleToHistory(newScramble);
   };
 
   return (
@@ -129,18 +127,23 @@ export function SidebarContent() {
             <Card>
               <CardHeader>
                 <CardTitle>Practice Mode</CardTitle>
-                <CardDescription>Scramble the cube and time your solves.</CardDescription>
-              </Header>
+                <CardDescription>Generate a scramble and solve it with the AI.</CardDescription>
+              </CardHeader>
               <CardContent className="space-y-4">
-                <Button onClick={handleScramble} className="w-full">Scramble Cube</Button>
+                <Button onClick={handleScramble} className="w-full">Generate New Scramble</Button>
                 <Separator/>
                 <h3 className="font-medium text-sm">Scramble History</h3>
-                <div className="space-y-2">
-                  {scrambleHistory.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No scrambles yet.</p>}
-                  {scrambleHistory.map((scramble, i) => (
-                    <p key={i} className="text-xs font-mono p-2 bg-muted rounded-md truncate">{scramble}</p>
-                  ))}
-                </div>
+                <ScrollArea className="h-40">
+                  <div className="space-y-2 pr-4">
+                    {scrambleHistory.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No scrambles yet.</p>}
+                    {scrambleHistory.map((scramble, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <p className="text-xs font-mono p-2 bg-muted rounded-md truncate flex-1">{scramble}</p>
+                        <Button variant="ghost" size="sm" onClick={() => setScrambleInput(scramble)}>Use</Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
@@ -149,7 +152,7 @@ export function SidebarContent() {
                 <CardHeader>
                     <CardTitle>Daily Challenge</CardTitle>
                     <CardDescription>Today's official scramble. Good luck!</CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent>
                     <p className="text-sm font-mono p-3 bg-muted rounded-md text-center">R U' F B2 L D2 R' F2 B U2 L'</p>
                     <Separator className="my-4"/>
