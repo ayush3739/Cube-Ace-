@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward } from 'lucide-react';
+import { Progress } from './ui/progress';
 
 const colors = {
   U: 0xffffff, // White
@@ -128,7 +129,7 @@ export function CubeViewer() {
       setStatus('solved');
     }
     return () => clearInterval(interval);
-  }, [isPlaying, currentMoveIndex, solution.length]);
+  }, [isPlaying, currentMoveIndex, solution.length, setStatus, handleNext]);
 
 
   return (
@@ -168,17 +169,10 @@ export function CubeViewer() {
                 <p className="text-center text-sm text-muted-foreground font-mono">
                     Move {currentMoveIndex} / {solution.length}: <span className="text-foreground font-bold">{solution[currentMoveIndex-1] || '-'}</span>
                 </p>
-                <Progress value={(currentMoveIndex / solution.length) * 100} className="h-2 mt-1" />
+                <Progress value={(currentMoveIndex / (solution.length || 1)) * 100} className="h-2 mt-1" />
             </div>
         </Card>
       )}
     </div>
   );
 }
-
-// Dummy Progress component if not available
-const Progress = ({ value, className }: { value: number; className?: string }) => (
-    <div className={cn("w-full bg-muted rounded-full h-2.5", className)}>
-        <div className="bg-primary h-2.5 rounded-full" style={{ width: `${value}%` }}></div>
-    </div>
-);
