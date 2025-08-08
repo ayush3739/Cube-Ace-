@@ -38,7 +38,19 @@ const prompt = ai.definePrompt({
   name: 'generateSolutionPrompt',
   input: {schema: GenerateSolutionInputSchema},
   output: {schema: GenerateSolutionOutputSchema},
-  prompt: `You are an expert Rubik's Cube solver. Given the following scramble and solving method, generate an efficient solution. A solved cube state is UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB.
+  prompt: `You are an expert Rubik's Cube solver. Your task is to provide a step-by-step solution to solve a cube from a given scramble.
+
+A solved cube has the following state, represented by the color of each sticker on each face:
+- Up (U): White (WWWWWWWWW)
+- Right (R): Red (RRRRRRRRR)
+- Front (F): Green (GGGGGGGGG)
+- Down (D): Yellow (YYYYYYYYY)
+- Left (L): Orange (OOOOOOOOO)
+- Back (B): Blue (BBBBBBBBB)
+
+The final solved state string is "WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB".
+
+Given the following scramble and solving method, generate an efficient solution in WCA notation.
 
 Scramble:
 {{scramble}}
