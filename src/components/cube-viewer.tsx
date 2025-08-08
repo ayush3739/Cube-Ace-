@@ -3,6 +3,7 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useCubeStore, ColorScheme } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Card } from './ui/card';
@@ -14,12 +15,12 @@ import { applyMove, getInitialCube, Cube } from '@/lib/cube-utils';
 const PI_2 = Math.PI / 2;
 
 const createStickerMaterials = (colorScheme: ColorScheme) => ({
-    U: new THREE.MeshStandardMaterial({ color: colorScheme.U, roughness: 0.2, metalness: 0.1 }),
-    D: new THREE.MeshStandardMaterial({ color: colorScheme.D, roughness: 0.2, metalness: 0.1 }),
-    F: new THREE.MeshStandardMaterial({ color: colorScheme.F, roughness: 0.2, metalness: 0.1 }),
-    B: new THREE.MeshStandardMaterial({ color: colorScheme.B, roughness: 0.2, metalness: 0.1 }),
-    R: new THREE.MeshStandardMaterial({ color: colorScheme.R, roughness: 0.2, metalness: 0.1 }),
-    L: new THREE.MeshStandardMaterial({ color: colorScheme.L, roughness: 0.2, metalness: 0.1 }),
+    U: new THREE.MeshBasicMaterial({ color: colorScheme.U }),
+    D: new THREE.MeshBasicMaterial({ color: colorScheme.D }),
+    F: new THREE.MeshBasicMaterial({ color: colorScheme.F }),
+    B: new THREE.MeshBasicMaterial({ color: colorScheme.B }),
+    R: new THREE.MeshBasicMaterial({ color: colorScheme.R }),
+    L: new THREE.MeshBasicMaterial({ color: colorScheme.L }),
     Core: new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.5, metalness: 0.2 }),
 });
 
@@ -32,6 +33,9 @@ export function CubeViewer() {
   const [cube, setCube] = useState<Cube>(getInitialCube());
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cubeGroupRef = useRef<THREE.Group | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
 
   const stickerMaterials = useMemo(() => createStickerMaterials(colorScheme), [colorScheme]);
 
@@ -69,16 +73,27 @@ export function CubeViewer() {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     const camera = new THREE.PerspectiveCamera(50, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
-    camera.position.set(5, 5, 5);
+    camera.position.set(4, 4, 6);
     camera.lookAt(0, 0, 0);
+    cameraRef.current = camera;
+    
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    rendererRef.current = renderer;
     mountRef.current.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    controls.rotateSpeed = 0.5;
+    controls.minDistance = 5;
+    controls.maxDistance = 20;
+    controlsRef.current = controls;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
     directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
     
@@ -88,8 +103,7 @@ export function CubeViewer() {
 
     const animate = () => {
       requestAnimationFrame(animate);
-      group.rotation.y += 0.005;
-      group.rotation.x += 0.002;
+      controls.update();
       renderer.render(scene, camera);
     };
     animate();
@@ -104,9 +118,10 @@ export function CubeViewer() {
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (mountRef.current) {
-        mountRef.current.removeChild(renderer.domElement);
+      if (mountRef.current && rendererRef.current) {
+        mountRef.current.removeChild(rendererRef.current.domElement);
       }
+      controls.dispose();
     };
   }, []);
 
