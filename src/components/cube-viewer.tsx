@@ -23,7 +23,7 @@ const createStickerMaterials = (colorScheme: ColorScheme) => ({
 
 export function CubeViewer() {
   const mountRef = useRef<HTMLDivElement>(null);
-  const { solution, setStatus, colorScheme } = useCubeStore();
+  const { solution, setStatus, colorScheme, resetCube } = useCubeStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [solutionVisible, setSolutionVisible] = useState(false);
@@ -97,6 +97,7 @@ export function CubeViewer() {
   const handleReset = () => {
     setCurrentMoveIndex(0);
     setIsPlaying(false);
+    resetCube();
   };
 
   const handleFinish = () => {
@@ -117,6 +118,12 @@ export function CubeViewer() {
     }
     return () => clearInterval(interval);
   }, [isPlaying, currentMoveIndex, solution.length, setStatus, handleNext]);
+  
+  useEffect(() => {
+    // Reset animation when a new solution is generated
+    setCurrentMoveIndex(0);
+    setIsPlaying(false);
+  }, [solution]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-4">

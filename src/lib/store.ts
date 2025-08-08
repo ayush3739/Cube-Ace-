@@ -26,6 +26,8 @@ const defaultColors: ColorScheme = {
   L: '#ff5800', // Orange
 };
 
+const SOLVED_CUBE_CONFIG = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+
 interface CubeState {
   status: AppStatus;
   cubeConfig: string | null;
@@ -43,13 +45,14 @@ interface CubeState {
   setColorScheme: (scheme: Partial<ColorScheme>) => void;
   resetColorScheme: () => void;
   addScrambleToHistory: (scramble: string) => void;
+  resetCube: () => void;
 }
 
 export const useCubeStore = create<CubeState>()(
   persist(
     (set, get) => ({
       status: 'idle',
-      cubeConfig: null,
+      cubeConfig: SOLVED_CUBE_CONFIG,
       solution: [],
       solvingMethod: 'beginner',
       cubeType: '3x3',
@@ -70,6 +73,13 @@ export const useCubeStore = create<CubeState>()(
         }
         set({ scrambleHistory: history });
       },
+      resetCube: () => {
+        set({
+          status: 'ready',
+          solution: [],
+          cubeConfig: SOLVED_CUBE_CONFIG,
+        });
+      }
     }),
     {
       name: 'cubeace-storage', // name of the item in the storage (must be unique)
