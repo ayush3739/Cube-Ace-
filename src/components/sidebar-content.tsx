@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCubeStore, ColorScheme } from '@/lib/store';
+import { useCubeStore, ColorScheme, faceToColor, SOLVED_CUBE_CONFIG } from '@/lib/store';
 import { Bot, Calendar, Box, History, Loader, Sprout, Trophy, Palette, Undo, Camera, Pencil } from 'lucide-react';
 import React, { useState } from 'react';
 import { generateSolution } from '@/ai/flows/generate-solution';
 import { useToast } from '@/hooks/use-toast';
-import { generateScramble, getInitialCube, applyMove } from '@/lib/cube-utils';
+import { generateScramble, getInitialCube, applyMove, cubeConfigToCube } from '@/lib/cube-utils';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
 import { Textarea } from './ui/textarea';
@@ -30,34 +30,48 @@ const faceMap = [
   { id: 'B', name: 'Back' },
 ];
 
-const faceLayout = {
-  U: [ {row: 0, col: 1}, {x:1, y:0}, {x:2, y:0}, {x:0, y:1}, {x:1, y:1}, {x:2, y:1}, {x:0, y:2}, {x:1, y:2}, {x:2, y:2} ],
-  L: [ {row: 1, col: 0}, {x:0, y:3}, {x:1, y:3}, {x:2, y:3}, {x:0, y:4}, {x:1, y:4}, {x:2, y:4}, {x:0, y:5}, {x:1, y:5}, {x:2, y:5} ],
-  F: [ {row: 1, col: 1}, {x:0, y:3}, {x:1, y:3}, {x:2, y:3}, {x:0, y:4}, {x:1, y:4}, {x:2, y:4}, {x:0, y:5}, {x:1, y:5}, {x:2, y:5} ],
-  R: [ {row: 1, col: 2}, {x:0, y:3}, {x:1, y:3}, {x:2, y:3}, {x:0, y:4}, {x:1, y:4}, {x:2, y:4}, {x:0, y:5}, {x:1, y:5}, {x:2, y:5} ],
-  B: [ {row: 1, col: 3}, {x:0, y:3}, {x:1, y:3}, {x:2, y:3}, {x:0, y:4}, {x:1, y:4}, {x:2, y:4}, {x:0, y:5}, {x:1, y:5}, {x:2, y:5} ],
-  D: [ {row: 2, col: 1}, {x:0, y:6}, {x:1, y:6}, {x:2, y:6}, {x:0, y:7}, {x:1, y:7}, {x:2, y:7}, {x:0, y:8}, {x:1, y:8}, {x:2, y:8} ],
+const faceLayout: {[key in keyof ColorScheme]: number[]} = {
+    U: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    R: [9, 10, 11, 12, 13, 14, 15, 16, 17],
+    F: [18, 19, 20, 21, 22, 23, 24, 25, 26],
+    D: [27, 28, 29, 30, 31, 32, 33, 34, 35],
+    L: [36, 37, 38, 39, 40, 41, 42, 43, 44],
+    B: [45, 46, 47, 48, 49, 50, 51, 52, 53],
+};
+
+const colorToFace: Record<string, keyof ColorScheme> = {
+    W: 'U',
+    R: 'R',
+    G: 'F',
+    Y: 'D',
+    O: 'L',
+    B: 'B',
 };
 
 function CubeStateEditor() {
     const { colorScheme, cubeConfig, setCubeConfig } = useCubeStore();
     const [selectedColor, setSelectedColor] = useState<keyof ColorScheme>('U');
     
-    // This is a simplified representation. A real implementation would need
-    // to map cubeConfig string to a 2D array for each face.
-    const faceColors: { [key: string]: string[] } = {
-        U: Array(9).fill(colorScheme.U),
-        L: Array(9).fill(colorScheme.L),
-        F: Array(9).fill(colorScheme.F),
-        R: Array(9).fill(colorScheme.R),
-        B: Array(9).fill(colorScheme.B),
-        D: Array(9).fill(colorScheme.D),
+    const faceColors = {
+      U: cubeConfig.substring(0, 9).split(''),
+      R: cubeConfig.substring(9, 18).split(''),
+      F: cubeConfig.substring(18, 27).split(''),
+      D: cubeConfig.substring(27, 36).split(''),
+      L: cubeConfig.substring(36, 45).split(''),
+      B: cubeConfig.substring(45, 54).split(''),
+    };
+    
+    const handleStickerClick = (face: keyof ColorScheme, index: number) => {
+        const configIndex = faceLayout[face][index];
+        const newColorChar = faceToColor[selectedColor];
+        const newCubeConfig = cubeConfig.substring(0, configIndex) + newColorChar + cubeConfig.substring(configIndex + 1);
+        setCubeConfig(newCubeConfig);
     };
 
-    const handleStickerClick = (face: string, index: number) => {
-        // A more complex mapping from face+index to cubeConfig string index is needed
-        console.log(`Setting ${face} sticker ${index} to ${colorScheme[selectedColor]}`);
-    };
+    const colorToHex = (colorChar: string) => {
+        const face = colorToFace[colorChar];
+        return face ? colorScheme[face] : '#000000';
+    }
 
     return (
         <Card>
@@ -80,41 +94,41 @@ function CubeStateEditor() {
                         />
                     ))}
                 </div>
-                <div className="grid grid-cols-4 grid-rows-3 gap-1 aspect-[4/3]">
+                <div className="grid grid-cols-4 grid-rows-3 gap-1 aspect-[4/3] mx-auto w-48">
                     {/* Up Face */}
                     <div className="col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
                         {faceColors.U.map((color, i) => (
-                             <div key={`U-${i}`} onClick={() => handleStickerClick('U', i)} className="aspect-square rounded-sm" style={{backgroundColor: color}} />
+                             <div key={`U-${i}`} onClick={() => handleStickerClick('U', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Left Face */}
-                    <div className="grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
                          {faceColors.L.map((color, i) => (
-                             <div key={`L-${i}`} onClick={() => handleStickerClick('L', i)} className="aspect-square rounded-sm" style={{backgroundColor: color}} />
+                             <div key={`L-${i}`} onClick={() => handleStickerClick('L', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Front Face */}
-                    <div className="grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
                          {faceColors.F.map((color, i) => (
-                             <div key={`F-${i}`} onClick={() => handleStickerClick('F', i)} className="aspect-square rounded-sm" style={{backgroundColor: color}} />
+                             <div key={`F-${i}`} onClick={() => handleStickerClick('F', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Right Face */}
-                    <div className="grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
                          {faceColors.R.map((color, i) => (
-                             <div key={`R-${i}`} onClick={() => handleStickerClick('R', i)} className="aspect-square rounded-sm" style={{backgroundColor: color}} />
+                             <div key={`R-${i}`} onClick={() => handleStickerClick('R', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                      {/* Back Face */}
-                    <div className="grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
                          {faceColors.B.map((color, i) => (
-                             <div key={`B-${i}`} onClick={() => handleStickerClick('B', i)} className="aspect-square rounded-sm" style={{backgroundColor: color}} />
+                             <div key={`B-${i}`} onClick={() => handleStickerClick('B', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Down Face */}
-                    <div className="col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-3 col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
                          {faceColors.D.map((color, i) => (
-                             <div key={`D-${i}`} onClick={() => handleStickerClick('D', i)} className="aspect-square rounded-sm" style={{backgroundColor: color}} />
+                             <div key={`D-${i}`} onClick={() => handleStickerClick('D', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                 </div>
@@ -123,9 +137,24 @@ function CubeStateEditor() {
     );
 }
 
+function validateCubeConfig(config: string): boolean {
+    if (config.length !== 54) return false;
+    const counts: {[key: string]: number} = {'W': 0, 'R': 0, 'G': 0, 'Y': 0, 'O': 0, 'B': 0};
+    for (const char of config) {
+        if (counts[char] !== undefined) {
+            counts[char]++;
+        } else {
+            return false; // Invalid character
+        }
+    }
+    return Object.values(counts).every(count => count === 9);
+}
+
+
 export function SidebarContent() {
   const { 
-    setCubeConfig, 
+    setCubeConfig,
+    cubeConfig,
     setStatus, 
     setSolution,
     status,
@@ -143,22 +172,41 @@ export function SidebarContent() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleGenerateSolution = async () => {
-    if (!scramble) {
-      toast({ title: 'No Scramble', description: 'Please enter a scramble first.', variant: 'destructive' });
+    let effectiveScramble = scramble;
+    let configToUse = cubeConfig;
+
+    // Determine if we're solving from manual input or a scramble
+    const isManualInput = cubeConfig !== SOLVED_CUBE_CONFIG && !scramble;
+
+    if (isManualInput) {
+      if (!validateCubeConfig(cubeConfig)) {
+        toast({ title: 'Invalid Cube State', description: 'Each color must have exactly 9 stickers. Please check your manual input.', variant: 'destructive' });
+        return;
+      }
+      // TODO: When there's a flow to convert config to scramble
+      // effectiveScramble = await configToScramble(cubeConfig)
+      // For now, we pass the config and expect the AI to handle it.
+      // We will adjust the prompt to clarify this.
+      effectiveScramble = `config:${cubeConfig}`;
+
+    } else if (scramble) {
+       const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)(?:\s+(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?))*$/;
+       if (!wcaRegex.test(scramble.trim())) {
+         toast({ title: 'Invalid Scramble', description: 'Please check your WCA notation.', variant: 'destructive' });
+         return;
+       }
+    } else {
+      toast({ title: 'No Input', description: 'Please enter a scramble or set the cube state manually.', variant: 'destructive' });
       return;
     }
-    const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)(?:\s+(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?))*$/;
-    if (!wcaRegex.test(scramble.trim())) {
-      toast({ title: 'Invalid Scramble', description: 'Please check your WCA notation.', variant: 'destructive' });
-      return;
-    }
+
 
     setStatus('solving');
     setSolution([]);
     toast({ title: 'Generating Solution...', description: `Using the ${solvingMethod} method.` });
 
     try {
-      const result = await generateSolution({ scramble: scramble, solvingMethod });
+      const result = await generateSolution({ scramble: effectiveScramble, solvingMethod });
       
       let newCube = getInitialCube();
       const moves = scramble.split(' ').filter(m => m);
@@ -169,7 +217,9 @@ export function SidebarContent() {
       setSolution(result.solution.split(' '));
       // Applying the scramble will now happen in the cube viewer based on the scramble string
       setStatus('solved');
-      addScrambleToHistory(scramble);
+      if (scramble) {
+        addScrambleToHistory(scramble);
+      }
       toast({ title: 'Solution Found!', description: 'The solution is ready to be animated.', variant: 'default' });
     } catch (error) {
       console.error(error);
@@ -181,6 +231,7 @@ export function SidebarContent() {
   const handleScramble = () => {
     const newScramble = generateScramble();
     setScramble(newScramble);
+    setCubeConfig(SOLVED_CUBE_CONFIG);
     setStatus('scrambled');
     setSolution([]);
   };
@@ -197,9 +248,15 @@ export function SidebarContent() {
       const photoDataUri = e.target?.result as string;
       try {
         const { cubeState } = await detectCubeState({ photoDataUri });
-        setCubeConfig(cubeState);
-        setStatus('ready');
-        toast({ title: 'Detection Complete!', description: 'Your cube state is ready.' });
+        if (validateCubeConfig(cubeState)) {
+            setCubeConfig(cubeState);
+            setScramble('');
+            setStatus('ready');
+            toast({ title: 'Detection Complete!', description: 'Your cube state is ready.' });
+        } else {
+            setStatus('ready');
+            toast({ title: 'Detection Failed', description: 'Could not detect a valid cube state. Please try another image.', variant: 'destructive' });
+        }
       } catch (error) {
         setStatus('ready');
         toast({ title: 'Detection Failed', description: 'Could not detect cube state from the image.', variant: 'destructive' });
@@ -218,96 +275,98 @@ export function SidebarContent() {
          </div>
       </div>
       <ScrollArea className="flex-1">
-        <Tabs defaultValue="solve" className="p-4">
-          <TabsList className="grid w-full grid-cols-3 gap-1">
-            <TabsTrigger value="solve"><Sprout className="w-4 h-4 mr-1.5" />Solve</TabsTrigger>
-            <TabsTrigger value="scan"><Camera className="w-4 h-4 mr-1.5" />Scan</TabsTrigger>
-            <TabsTrigger value="practice"><History className="w-4 h-4 mr-1.5" />Practice</TabsTrigger>
-            
-          </TabsList>
-          <TabsContent value="solve" className="space-y-4 mt-4">
-            <Card>
+        <div className="p-4">
+          <Tabs defaultValue="solve" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="solve"><Sprout className="w-4 h-4 mr-1.5" />Solve</TabsTrigger>
+              <TabsTrigger value="scan"><Camera className="w-4 h-4 mr-1.5" />Scan</TabsTrigger>
+              <TabsTrigger value="practice"><History className="w-4 h-4 mr-1.5" />Practice</TabsTrigger>
+            </TabsList>
+            <TabsContent value="solve" className="space-y-4 mt-4">
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Bot className="text-accent w-5 h-5"/>AI Solver</CardTitle>
+                      <CardDescription>Enter a scramble or manually set the colors below.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid w-full gap-1.5">
+                        <Label htmlFor="scramble">WCA Scramble (Overrides Manual Input)</Label>
+                        <Textarea 
+                          id="scramble" 
+                          placeholder="e.g., R U R' U' F2 D'..."
+                          value={scramble}
+                          onChange={(e) => setScramble(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                      <RadioGroup value={solvingMethod} onValueChange={(val: 'beginner' | 'advanced') => setSolvingMethod(val)}>
+                          <Label>Solving Method</Label>
+                          <div className="flex gap-4 pt-2">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="beginner" id="r1" />
+                                <Label htmlFor="r1">Beginner</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="advanced" id="r2" />
+                                <Label htmlFor="r2">Advanced</Label>
+                            </div>
+                          </div>
+                      </RadioGroup>
+                      <Button onClick={handleGenerateSolution} disabled={status === 'solving'} className="w-full">
+                          {status === 'solving' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                          Generate Solution
+                      </Button>
+                  </CardContent>
+              </Card>
+              <CubeStateEditor />
+            </TabsContent>
+            <TabsContent value="scan" className="mt-4">
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Camera className="text-accent w-5 h-5" />Scan Your Cube</CardTitle>
+                      <CardDescription>Upload a photo of your cube to detect its state automatically.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                      <Button onClick={() => fileInputRef.current?.click()} className="w-full" disabled={status === 'detecting'}>
+                          {status === 'detecting' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                          Upload Image
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center mt-3">This feature uses AI and may not be 100% accurate.</p>
+                  </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="practice" className="mt-4">
+              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Bot className="text-accent w-5 h-5"/>AI Solver</CardTitle>
-                    <CardDescription>Enter a scramble, choose a method, and get the solution.</CardDescription>
+                  <CardTitle>Practice Mode</CardTitle>
+                  <CardDescription>Generate a random scramble to practice.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid w-full gap-1.5">
-                      <Label htmlFor="scramble">WCA Scramble</Label>
-                      <Textarea 
-                        id="scramble" 
-                        placeholder="e.g., R U R' U' F2 D'..."
-                        value={scramble}
-                        onChange={(e) => setScramble(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                    <RadioGroup value={solvingMethod} onValueChange={(val: 'beginner' | 'advanced') => setSolvingMethod(val)}>
-                        <Label>Solving Method</Label>
-                        <div className="flex gap-4 pt-2">
-                          <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="beginner" id="r1" />
-                              <Label htmlFor="r1">Beginner</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="advanced" id="r2" />
-                              <Label htmlFor="r2">Advanced</Label>
-                          </div>
+                  <Button onClick={handleScramble} className="w-full">Generate New Scramble</Button>
+                  <Separator/>
+                  <h3 className="font-medium text-sm mt-4">Scramble History</h3>
+                  <ScrollArea className="h-40">
+                    <div className="space-y-2 pr-4">
+                      {scrambleHistory.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No scrambles yet.</p>}
+                      {scrambleHistory.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <p className="text-xs font-mono p-2 bg-muted rounded-md truncate flex-1">{s}</p>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setScramble(s);
+                            setCubeConfig(SOLVED_CUBE_CONFIG);
+                            setStatus('scrambled');
+                            setSolution([]);
+                          }}>Use</Button>
                         </div>
-                    </RadioGroup>
-                    <Button onClick={handleGenerateSolution} disabled={status === 'solving' || !scramble} className="w-full">
-                        {status === 'solving' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                        Generate Solution
-                    </Button>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
-            </Card>
-            <CubeStateEditor />
-          </TabsContent>
-           <TabsContent value="scan">
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Camera className="text-accent w-5 h-5" />Scan Your Cube</CardTitle>
-                    <CardDescription>Upload a photo of your cube to detect its state automatically.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                    <Button onClick={() => fileInputRef.current?.click()} className="w-full" disabled={status === 'detecting'}>
-                        {status === 'detecting' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                        Upload Image
-                    </Button>
-                     <p className="text-xs text-muted-foreground text-center mt-3">This feature uses AI and may not be 100% accurate.</p>
-                </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="practice">
-            <Card>
-              <CardHeader>
-                <CardTitle>Practice Mode</CardTitle>
-                <CardDescription>Generate a scramble and solve it with the AI.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button onClick={handleScramble} className="w-full">Generate New Scramble</Button>
-                <Separator/>
-                <h3 className="font-medium text-sm mt-4">Scramble History</h3>
-                <ScrollArea className="h-40">
-                  <div className="space-y-2 pr-4">
-                    {scrambleHistory.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No scrambles yet.</p>}
-                    {scrambleHistory.map((s, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <p className="text-xs font-mono p-2 bg-muted rounded-md truncate flex-1">{s}</p>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          setScramble(s);
-                          setStatus('scrambled');
-                          setSolution([]);
-                        }}>Use</Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
         <div className="px-4 space-y-4">
             <Separator />
             <Card className="mt-4">

@@ -17,7 +17,7 @@ export interface ColorScheme {
   L: string;
 }
 
-const defaultColors: ColorScheme = {
+export const defaultColors: ColorScheme = {
   U: '#ffffff', // White
   D: '#ffd500', // Yellow
   F: '#009b48', // Green
@@ -26,11 +26,20 @@ const defaultColors: ColorScheme = {
   L: '#ff5800', // Orange
 };
 
-const SOLVED_CUBE_CONFIG = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+export const SOLVED_CUBE_CONFIG = 'WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB';
+export const faceToColor: Record<keyof ColorScheme, string> = {
+    U: 'W',
+    R: 'R',
+    F: 'G',
+    D: 'Y',
+    L: 'O',
+    B: 'B',
+};
+
 
 interface CubeState {
   status: AppStatus;
-  cubeConfig: string | null;
+  cubeConfig: string;
   solution: string[];
   scramble: string;
   solvingMethod: SolvingMethod;
@@ -93,7 +102,8 @@ export const useCubeStore = create<CubeState>()(
         solvingMethod: state.solvingMethod,
         cubeType: state.cubeType,
         colorScheme: state.colorScheme,
-        scrambleHistory: state.scrambleHistory
+        scrambleHistory: state.scrambleHistory,
+        cubeConfig: state.cubeConfig,
       }),
     }
   )

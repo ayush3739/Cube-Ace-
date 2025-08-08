@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-solution.ts
 'use server';
 /**
@@ -15,7 +16,7 @@ const GenerateSolutionInputSchema = z.object({
   scramble: z
     .string()
     .describe(
-      'A string representing the Rubik\'s Cube scramble in WCA notation. Example: R U R\' U\''
+      'A string representing the Rubik\'s Cube scramble in WCA notation, OR a cube state config string prefixed with "config:". Example: "R U R\' U\'" or "config:WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB"'
     ),
   solvingMethod: z
     .enum(['beginner', 'advanced'])
@@ -38,22 +39,25 @@ const prompt = ai.definePrompt({
   name: 'generateSolutionPrompt',
   input: {schema: GenerateSolutionInputSchema},
   output: {schema: GenerateSolutionOutputSchema},
-  prompt: `You are an expert Rubik's Cube solver. Your task is to provide a step-by-step solution to solve a cube from a given scramble.
+  prompt: `You are an expert Rubik's Cube solver. Your task is to provide a step-by-step solution to solve a cube from a given state.
 
-A solved cube has the following state, represented by the color of each sticker on each face:
-- Up (U): White (WWWWWWWWW)
-- Right (R): Red (RRRRRRRRR)
-- Front (F): Green (GGGGGGGGG)
-- Down (D): Yellow (YYYYYYYYY)
-- Left (L): Orange (OOOOOOOOO)
-- Back (B): Blue (BBBBBBBBB)
+The state can be provided in two ways:
+1. A standard WCA scramble (e.g., "R U R' U'").
+2. A 54-character string representing the color of each sticker on each face, prefixed with "config:".
 
-The final solved state string is "WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB".
+The solved state is represented by this 54-character string: "WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB".
+The order of faces in the string is Up, Right, Front, Down, Left, Back.
+- Up (U): White (W)
+- Right (R): Red (R)
+- Front (F): Green (G)
+- Down (D): Yellow (Y)
+- Left (L): Orange (O)
+- Back (B): Blue (B)
 
-Given the following scramble and solving method, generate an efficient solution in WCA notation.
+Given the following input and solving method, generate an efficient solution in WCA notation.
 
-Scramble:
-{{scramble}}
+Input:
+{{{scramble}}}
 
 Solving Method:
 {{solvingMethod}}

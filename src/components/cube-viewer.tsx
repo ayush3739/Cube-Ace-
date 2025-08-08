@@ -4,13 +4,13 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { useCubeStore, ColorScheme } from '@/lib/store';
+import { useCubeStore, ColorScheme, SOLVED_CUBE_CONFIG } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward, Eye, EyeOff, Info } from 'lucide-react';
 import { Progress } from './ui/progress';
-import { applyMove, getInitialCube, Cube } from '@/lib/cube-utils';
+import { applyMove, getInitialCube, Cube, cubeConfigToCube } from '@/lib/cube-utils';
 
 const PI_2 = Math.PI / 2;
 
@@ -26,7 +26,7 @@ const createStickerMaterials = (colorScheme: ColorScheme) => ({
 
 export function CubeViewer() {
   const mountRef = useRef<HTMLDivElement>(null);
-  const { solution, setStatus, colorScheme, resetCube, scramble } = useCubeStore();
+  const { solution, setStatus, colorScheme, resetCube, scramble, cubeConfig } = useCubeStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [solutionVisible, setSolutionVisible] = useState(false);
@@ -39,25 +39,32 @@ export function CubeViewer() {
 
   const stickerMaterials = useMemo(() => createStickerMaterials(colorScheme), [colorScheme]);
 
-  const resetCubeState = useCallback(() => {
-    let newCube = getInitialCube();
+  const resetCubeToScrambledOrConfig = useCallback(() => {
+    let newCube: Cube;
     if (scramble) {
+      newCube = getInitialCube();
       const moves = scramble.split(' ').filter(m => m);
       moves.forEach(move => {
         newCube = applyMove(newCube, move);
       });
+    } else {
+      newCube = cubeConfigToCube(cubeConfig);
     }
     setCube(newCube);
     setCurrentMoveIndex(0);
-  }, [scramble]);
+  }, [scramble, cubeConfig]);
+
 
   const applySolutionMoves = useCallback((targetMoveIndex: number) => {
-    let currentCube = getInitialCube();
-     if (scramble) {
-      const scrambleMoves = scramble.split(' ').filter(m => m);
-      scrambleMoves.forEach(move => {
-        currentCube = applyMove(currentCube, move);
-      });
+    let currentCube;
+    if (scramble) {
+        currentCube = getInitialCube();
+        const scrambleMoves = scramble.split(' ').filter(m => m);
+        scrambleMoves.forEach(move => {
+            currentCube = applyMove(currentCube, move);
+        });
+    } else {
+        currentCube = cubeConfigToCube(cubeConfig);
     }
 
     const solutionMoves = solution.slice(0, targetMoveIndex);
@@ -65,7 +72,8 @@ export function CubeViewer() {
       currentCube = applyMove(currentCube, move);
     });
     setCube(currentCube);
-  }, [solution, scramble]);
+  }, [solution, scramble, cubeConfig]);
+
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -149,7 +157,7 @@ export function CubeViewer() {
         const faces = ['U', 'D', 'F', 'B', 'R', 'L'] as const;
         faces.forEach(face => {
             const color = cubieData[face];
-            if (color) {
+            if (color && stickerMaterials[color]) {
                 const sticker = new THREE.Mesh(stickerGeo, stickerMaterials[color]);
                 const offset = 0.51;
                 switch (face) {
@@ -166,16 +174,17 @@ export function CubeViewer() {
 
         cubie.position.set(
             (i % 3) - 1,
-            Math.floor((i % 9) / 3) - 1,
-            Math.floor(i / 9) - 1
+            -1 * (Math.floor((i % 9) / 3) - 1), // Invert Y
+            -1 * (Math.floor(i / 9) - 1)       // Invert Z
         );
+        cubie.rotation.set(0, 0, 0);
         group.add(cubie);
     }
   }, [cube, stickerMaterials, colorScheme]);
 
   useEffect(() => {
-    resetCubeState();
-  }, [scramble, resetCubeState]);
+    resetCubeToScrambledOrConfig();
+  }, [scramble, cubeConfig, resetCubeToScrambledOrConfig]);
   
   useEffect(() => {
     applySolutionMoves(currentMoveIndex);
@@ -193,7 +202,7 @@ export function CubeViewer() {
     setCurrentMoveIndex(0);
     setIsPlaying(false);
     resetCube();
-    resetCubeState();
+    resetCubeToScrambledOrConfig();
   };
 
   const handleFinish = () => {
@@ -219,8 +228,8 @@ export function CubeViewer() {
     // Reset animation when a new solution is generated
     setCurrentMoveIndex(0);
     setIsPlaying(false);
-    resetCubeState();
-  }, [solution, resetCubeState]);
+    resetCubeToScrambledOrConfig();
+  }, [solution, resetCubeToScrambledOrConfig]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-4">
@@ -288,5 +297,3 @@ export function CubeViewer() {
     </div>
   );
 }
-
-    
