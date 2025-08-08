@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCubeStore } from '@/lib/store';
-import { Bot, Calendar, Cube, FileImage, History, Loader, Sprout, Trophy, Upload } from 'lucide-react';
+import { Bot, Calendar, Box, FileImage, History, Loader, Sprout, Trophy, Upload } from 'lucide-react';
 import React, { useState } from 'react';
 import { generateSolution } from '@/ai/flows/generate-solution';
 import { detectCubeState } from '@/ai/flows/detect-cube-state';
@@ -95,7 +95,7 @@ export function SidebarContent() {
   return (
     <div className="flex h-full flex-col text-sm">
       <div className="flex items-center gap-3 p-4 border-b">
-         <Cube className="w-8 h-8 text-primary" />
+         <Box className="w-8 h-8 text-primary" />
          <div className="flex flex-col">
             <h1 className="font-headline text-lg font-bold tracking-tight">CubeAce</h1>
             <p className="text-xs text-muted-foreground -mt-1">AI Cube Solver</p>

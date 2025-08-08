@@ -9,8 +9,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Cube, PanelLeft, Settings, Bot } from 'lucide-react';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { Box, PanelLeft, Settings, Bot } from 'lucide-react';
 import { CubeViewer } from '@/components/cube-viewer';
 import { SidebarContent } from '@/components/sidebar-content';
 import { useCubeStore } from '@/lib/store';
@@ -24,7 +23,7 @@ function AppHeader() {
     <header className="flex h-14 items-center gap-4 border-b bg-card/50 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-10">
       {isMobile && <SidebarTrigger />}
       <div className="flex items-center gap-2 font-headline text-lg font-bold">
-        <Cube className="h-6 w-6 text-primary" />
+        <Box className="h-6 w-6 text-primary" />
         CubeAce
       </div>
       <div className="ml-auto flex items-center gap-4">
@@ -36,8 +35,6 @@ function AppHeader() {
           )}
          <span>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
         </div>
-        <Separator orientation="vertical" className="h-6" />
-        <ThemeToggle />
       </div>
     </header>
   );
