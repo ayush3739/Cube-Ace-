@@ -1,0 +1,7 @@
+<svg width="80" height="70" viewBox="0 0 80 70" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="currentColor" stroke-width="0.5" fill="none">
+    <path d="M40 0 L80 20 V60 L40 40 L0 60 V20 z"/>
+    <path d="M40 40 V70 L0 60"/>
+    <path d="M40 70 L80 60"/>
+  </g>
+</svg>

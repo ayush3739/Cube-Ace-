@@ -1,0 +1,220 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCubeStore } from '@/lib/store';
+import { Bot, Calendar, Cube, FileImage, History, Loader, Sprout, Trophy, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { generateSolution } from '@/ai/flows/generate-solution';
+import { detectCubeState } from '@/ai/flows/detect-cube-state';
+import { useToast } from '@/hooks/use-toast';
+import { generateScramble } from '@/lib/cube-utils';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { ScrollArea } from './ui/scroll-area';
+
+export function SidebarContent() {
+  const { 
+    setCubeConfig, 
+    setStatus, 
+    setSolution,
+    status, 
+    cubeConfig, 
+    solvingMethod,
+    setSolvingMethod,
+    scrambleHistory,
+    addScrambleToHistory,
+  } = useCubeStore();
+  const { toast } = useToast();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
+  const handleDetectState = async () => {
+    if (!selectedFile) {
+      toast({ title: 'No file selected', description: 'Please choose an image of your cube.', variant: 'destructive' });
+      return;
+    }
+    setStatus('detecting');
+    toast({ title: 'Detecting Cube State...', description: 'The AI is analyzing your image.' });
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const photoDataUri = e.target?.result as string;
+        const result = await detectCubeState({ photoDataUri });
+        setCubeConfig(result.cubeState);
+        setStatus('ready');
+        toast({ title: 'Detection Successful!', description: 'Cube state has been loaded.', variant: 'default' });
+      } catch (error) {
+        console.error(error);
+        setStatus('idle');
+        toast({ title: 'Detection Failed', description: 'Could not determine cube state from the image.', variant: 'destructive' });
+      }
+    };
+    reader.readAsDataURL(selectedFile);
+  };
+  
+  const handleGenerateSolution = async () => {
+    if (!cubeConfig) {
+      toast({ title: 'No Cube State', description: 'Please detect or enter a cube state first.', variant: 'destructive' });
+      return;
+    }
+    setStatus('solving');
+    setSolution([]);
+    toast({ title: 'Generating Solution...', description: `Using the ${solvingMethod} method.` });
+
+    try {
+      const result = await generateSolution({ cubeConfiguration: cubeConfig, solvingMethod });
+      setSolution(result.solution.split(' '));
+      setStatus('solved');
+      toast({ title: 'Solution Found!', description: 'The solution is ready to be animated.', variant: 'default' });
+    } catch (error) {
+      console.error(error);
+      setStatus('ready');
+      toast({ title: 'Solving Failed', description: 'The AI could not find a solution.', variant: 'destructive' });
+    }
+  };
+
+  const handleScramble = () => {
+    const newScramble = generateScramble();
+    setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'); // Reset to solved then apply scramble
+    setSolution(newScramble.split(' '));
+    addScrambleToHistory(newScramble);
+    setStatus('scrambled');
+  }
+
+  return (
+    <div className="flex h-full flex-col text-sm">
+      <div className="flex items-center gap-3 p-4 border-b">
+         <Cube className="w-8 h-8 text-primary" />
+         <div className="flex flex-col">
+            <h1 className="font-headline text-lg font-bold tracking-tight">CubeAce</h1>
+            <p className="text-xs text-muted-foreground -mt-1">AI Cube Solver</p>
+         </div>
+      </div>
+      <ScrollArea className="flex-1">
+        <Tabs defaultValue="solve" className="p-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="solve"><Bot className="w-4 h-4 mr-1.5" />Solve</TabsTrigger>
+            <TabsTrigger value="practice"><History className="w-4 h-4 mr-1.5" />Practice</TabsTrigger>
+            <TabsTrigger value="daily"><Calendar className="w-4 h-4 mr-1.5" />Daily</TabsTrigger>
+          </TabsList>
+          <TabsContent value="solve" className="space-y-4 mt-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><FileImage className="text-accent w-5 h-5"/>Automated State Input</CardTitle>
+                    <CardDescription>Upload a photo of your cube and let our AI detect its state.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid w-full max-w-sm items-center gap-1.5">
+                        <Label htmlFor="picture">Cube Photo</Label>
+                        <Input id="picture" type="file" accept="image/*" onChange={handleFileChange} />
+                    </div>
+                    <Button onClick={handleDetectState} disabled={status === 'detecting' || !selectedFile} className="w-full">
+                        {status === 'detecting' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        Detect State
+                    </Button>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sprout className="text-accent w-5 h-5"/>AI Solver</CardTitle>
+                    <CardDescription>Choose your preferred solving method and generate a solution.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <RadioGroup value={solvingMethod} onValueChange={(val: 'beginner' | 'advanced') => setSolvingMethod(val)}>
+                        <Label>Solving Method</Label>
+                        <div className="flex gap-4 pt-2">
+                          <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="beginner" id="r1" />
+                              <Label htmlFor="r1">Beginner</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="advanced" id="r2" />
+                              <Label htmlFor="r2">Advanced</Label>
+                          </div>
+                        </div>
+                    </RadioGroup>
+                    <Button onClick={handleGenerateSolution} disabled={status === 'solving' || !cubeConfig} className="w-full">
+                        {status === 'solving' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                        Generate Solution
+                    </Button>
+                </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="practice">
+            <Card>
+              <CardHeader>
+                <CardTitle>Practice Mode</CardTitle>
+                <CardDescription>Scramble the cube and time your solves.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={handleScramble} className="w-full">Scramble Cube</Button>
+                <Separator/>
+                <h3 className="font-medium text-sm">Scramble History</h3>
+                <div className="space-y-2">
+                  {scrambleHistory.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No scrambles yet.</p>}
+                  {scrambleHistory.map((scramble, i) => (
+                    <p key={i} className="text-xs font-mono p-2 bg-muted rounded-md truncate">{scramble}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="daily">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Daily Challenge</CardTitle>
+                    <CardDescription>Today's official scramble. Good luck!</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm font-mono p-3 bg-muted rounded-md text-center">R U' F B2 L D2 R' F2 B U2 L'</p>
+                    <Separator className="my-4"/>
+                    <h3 className="font-medium text-sm flex items-center gap-2 mb-2"><Trophy className="w-4 h-4 text-secondary"/> Leaderboard</h3>
+                     <p className="text-xs text-muted-foreground text-center py-4">Feature coming soon!</p>
+                </CardContent>
+             </Card>
+          </TabsContent>
+        </Tabs>
+        <div className="px-4 space-y-4">
+            <Separator />
+            <div className="space-y-2">
+                <Label>Cube Type</Label>
+                <Select defaultValue="3x3">
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select cube size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="2x2" disabled>2x2x2</SelectItem>
+                        <SelectItem value="3x3">3x3x3</SelectItem>
+                        <SelectItem value="4x4" disabled>4x4x4</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label>Cube Theme</Label>
+                <Select defaultValue="classic">
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select cube theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="classic">Classic</SelectItem>
+                        <SelectItem value="pastel" disabled>Pastel</SelectItem>
+                        <SelectItem value="high-contrast" disabled>High Contrast</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
