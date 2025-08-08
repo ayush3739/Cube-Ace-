@@ -7,7 +7,7 @@ import { useCubeStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward, Eye, EyeOff } from 'lucide-react';
 import { Progress } from './ui/progress';
 
 const colors = {
@@ -37,6 +37,7 @@ export function CubeViewer() {
   const { solution, setStatus } = useCubeStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+  const [solutionVisible, setSolutionVisible] = useState(false);
 
   // This effect will run once to set up the Three.js scene
   useEffect(() => {
@@ -175,6 +176,19 @@ export function CubeViewer() {
                     Move {currentMoveIndex} / {solution.length}: <span className="text-foreground font-bold">{solution[currentMoveIndex-1] || '-'}</span>
                 </p>
                 <Progress value={(currentMoveIndex / (solution.length || 1)) * 100} className="h-2 mt-1" />
+            </div>
+            <div className="mt-4 px-2 text-center">
+              <Button variant="outline" size="sm" onClick={() => setSolutionVisible(!solutionVisible)}>
+                {solutionVisible ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
+                {solutionVisible ? 'Hide' : 'Reveal'} full solution
+              </Button>
+              {solutionVisible && (
+                 <Card className="mt-2 p-3 bg-muted">
+                    <p className="font-mono text-sm text-left whitespace-pre-wrap break-words">
+                      {solution.join(' ')}
+                    </p>
+                 </Card>
+              )}
             </div>
         </Card>
       )}
