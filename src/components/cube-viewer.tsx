@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useCubeStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -106,7 +107,11 @@ export function CubeViewer() {
   }, []);
 
   const handlePlayPause = () => setIsPlaying(!isPlaying);
-  const handleNext = () => setCurrentMoveIndex(i => Math.min(i + 1, solution.length));
+
+  const handleNext = useCallback(() => {
+    setCurrentMoveIndex(i => Math.min(i + 1, solution.length));
+  }, [solution.length]);
+  
   const handlePrev = () => setCurrentMoveIndex(i => Math.max(i - 1, 0));
   const handleReset = () => {
     setCurrentMoveIndex(0);
