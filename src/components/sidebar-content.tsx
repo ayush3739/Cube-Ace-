@@ -69,7 +69,7 @@ function CubeStateEditor() {
     };
 
     const colorToHex = (colorChar: string) => {
-        const face = colorToFace[colorChar];
+        const face = colorToFace[colorChar as keyof typeof colorToFace];
         return face ? colorScheme[face] : '#000000';
     }
 
@@ -94,39 +94,39 @@ function CubeStateEditor() {
                         />
                     ))}
                 </div>
-                <div className="grid grid-cols-4 grid-rows-3 gap-1 aspect-[4/3] mx-auto w-48">
+                <div className="grid grid-cols-4 grid-rows-4 gap-1 aspect-[4/3] mx-auto w-48" style={{gridTemplateAreas: '". U . ." "L F R B" ". D . ."'}}>
                     {/* Up Face */}
-                    <div className="col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5" style={{gridArea: 'U'}}>
                         {faceColors.U.map((color, i) => (
                              <div key={`U-${i}`} onClick={() => handleStickerClick('U', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Left Face */}
-                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5" style={{gridArea: 'L'}}>
                          {faceColors.L.map((color, i) => (
                              <div key={`L-${i}`} onClick={() => handleStickerClick('L', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Front Face */}
-                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5" style={{gridArea: 'F'}}>
                          {faceColors.F.map((color, i) => (
                              <div key={`F-${i}`} onClick={() => handleStickerClick('F', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Right Face */}
-                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5" style={{gridArea: 'R'}}>
                          {faceColors.R.map((color, i) => (
                              <div key={`R-${i}`} onClick={() => handleStickerClick('R', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                      {/* Back Face */}
-                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-2 grid grid-cols-3 grid-rows-3 gap-0.5" style={{gridArea: 'B'}}>
                          {faceColors.B.map((color, i) => (
                              <div key={`B-${i}`} onClick={() => handleStickerClick('B', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
                     </div>
                     {/* Down Face */}
-                    <div className="row-start-3 col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5">
+                    <div className="row-start-3 col-start-2 grid grid-cols-3 grid-rows-3 gap-0.5" style={{gridArea: 'D'}}>
                          {faceColors.D.map((color, i) => (
                              <div key={`D-${i}`} onClick={() => handleStickerClick('D', i)} className="aspect-square rounded-sm cursor-pointer" style={{backgroundColor: colorToHex(color)}} />
                         ))}
@@ -183,10 +183,6 @@ export function SidebarContent() {
         toast({ title: 'Invalid Cube State', description: 'Each color must have exactly 9 stickers. Please check your manual input.', variant: 'destructive' });
         return;
       }
-      // TODO: When there's a flow to convert config to scramble
-      // effectiveScramble = await configToScramble(cubeConfig)
-      // For now, we pass the config and expect the AI to handle it.
-      // We will adjust the prompt to clarify this.
       effectiveScramble = `config:${cubeConfig}`;
 
     } else if (scramble) {
@@ -414,3 +410,5 @@ export function SidebarContent() {
     </div>
   );
 }
+
+    
