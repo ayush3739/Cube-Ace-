@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCubeStore } from '@/lib/store';
-import { Bot, Calendar, Box, History, Loader, Sprout, Trophy, Palette, Undo } from 'lucide-react';
+import { Bot, Calendar, Box, History, Loader, Sprout, Trophy, Palette, Undo, Camera } from 'lucide-react';
 import React from 'react';
 import { generateSolution } from '@/ai/flows/generate-solution';
 import { useToast } from '@/hooks/use-toast';
@@ -63,7 +63,7 @@ export function SidebarContent() {
     try {
       const result = await generateSolution({ scramble: scramble, solvingMethod });
       setSolution(result.solution.split(' '));
-      setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
+      // Applying the scramble will now happen in the cube viewer based on the scramble string
       setStatus('solved');
       addScrambleToHistory(scramble);
       toast({ title: 'Solution Found!', description: 'The solution is ready to be animated.', variant: 'default' });
@@ -77,9 +77,8 @@ export function SidebarContent() {
   const handleScramble = () => {
     const newScramble = generateScramble();
     setScramble(newScramble);
-    setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
     setStatus('scrambled');
-    addScrambleToHistory(newScramble);
+    setSolution([]);
   };
 
   return (
@@ -94,14 +93,15 @@ export function SidebarContent() {
       <ScrollArea className="flex-1">
         <Tabs defaultValue="solve" className="p-4">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="solve"><Bot className="w-4 h-4 mr-1.5" />Solve</TabsTrigger>
+            <TabsTrigger value="solve"><Sprout className="w-4 h-4 mr-1.5" />Solve</TabsTrigger>
+            <TabsTrigger value="scan"><Camera className="w-4 h-4 mr-1.5" />Scan</TabsTrigger>
             <TabsTrigger value="practice"><History className="w-4 h-4 mr-1.5" />Practice</TabsTrigger>
-            <TabsTrigger value="daily"><Calendar className="w-4 h-4 mr-1.5" />Daily</TabsTrigger>
+            
           </TabsList>
           <TabsContent value="solve" className="space-y-4 mt-4">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Sprout className="text-accent w-5 h-5"/>AI Solver</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Bot className="text-accent w-5 h-5"/>AI Solver</CardTitle>
                     <CardDescription>Enter a scramble, choose a method, and get the solution.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -135,6 +135,17 @@ export function SidebarContent() {
                 </CardContent>
             </Card>
           </TabsContent>
+           <TabsContent value="scan">
+            <Card>
+              <CardHeader>
+                <CardTitle>Scan Your Cube</CardTitle>
+                <CardDescription>Upload a picture of your cube to get started.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                 <p className="text-xs text-muted-foreground text-center py-4">Feature coming soon!</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
           <TabsContent value="practice">
             <Card>
               <CardHeader>
@@ -144,34 +155,24 @@ export function SidebarContent() {
               <CardContent className="space-y-4">
                 <Button onClick={handleScramble} className="w-full">Generate New Scramble</Button>
                 <Separator/>
-                <h3 className="font-medium text-sm">Scramble History</h3>
+                <h3 className="font-medium text-sm mt-4">Scramble History</h3>
                 <ScrollArea className="h-40">
                   <div className="space-y-2 pr-4">
                     {scrambleHistory.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No scrambles yet.</p>}
-                    {scrambleHistory.map((scramble, i) => (
+                    {scrambleHistory.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <p className="text-xs font-mono p-2 bg-muted rounded-md truncate flex-1">{scramble}</p>
-                        <Button variant="ghost" size="sm" onClick={() => setScramble(scramble)}>Use</Button>
+                        <p className="text-xs font-mono p-2 bg-muted rounded-md truncate flex-1">{s}</p>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          setScramble(s);
+                          setStatus('scrambled');
+                          setSolution([]);
+                        }}>Use</Button>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               </CardContent>
             </Card>
-          </TabsContent>
-          <TabsContent value="daily">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Daily Challenge</CardTitle>
-                    <CardDescription>Today's official scramble. Good luck!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm font-mono p-3 bg-muted rounded-md text-center">R U' F B2 L D2 R' F2 B U2 L'</p>
-                    <Separator className="my-4"/>
-                    <h3 className="font-medium text-sm flex items-center gap-2 mb-2"><Trophy className="w-4 h-4 text-secondary"/> Leaderboard</h3>
-                     <p className="text-xs text-muted-foreground text-center py-4">Feature coming soon!</p>
-                </CardContent>
-             </Card>
           </TabsContent>
         </Tabs>
         <div className="px-4 space-y-4">
