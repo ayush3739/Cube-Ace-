@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -152,7 +151,7 @@ export function SidebarContent() {
                 <CardHeader>
                     <CardTitle>Daily Challenge</CardTitle>
                     <CardDescription>Today's official scramble. Good luck!</CardDescription>
-                </Header>
+                </CardHeader>
                 <CardContent>
                     <p className="text-sm font-mono p-3 bg-muted rounded-md text-center">R U' F B2 L D2 R' F2 B U2 L'</p>
                     <Separator className="my-4"/>
