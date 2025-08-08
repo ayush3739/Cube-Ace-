@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCubeStore } from '@/lib/store';
 import { Bot, Calendar, Box, History, Loader, Sprout, Trophy, Palette, Undo } from 'lucide-react';
-import React, { useState } from 'react';
+import React from 'react';
 import { generateSolution } from '@/ai/flows/generate-solution';
 import { useToast } from '@/hooks/use-toast';
 import { generateScramble } from '@/lib/cube-utils';
@@ -32,7 +32,9 @@ export function SidebarContent() {
     setCubeConfig, 
     setStatus, 
     setSolution,
-    status, 
+    status,
+    scramble,
+    setScramble,
     solvingMethod,
     setSolvingMethod,
     scrambleHistory,
@@ -42,15 +44,14 @@ export function SidebarContent() {
     resetColorScheme,
   } = useCubeStore();
   const { toast } = useToast();
-  const [scrambleInput, setScrambleInput] = useState('');
 
   const handleGenerateSolution = async () => {
-    if (!scrambleInput) {
+    if (!scramble) {
       toast({ title: 'No Scramble', description: 'Please enter a scramble first.', variant: 'destructive' });
       return;
     }
     const wcaRegex = /^(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?)(?:\s+(?:[RUFLDBrufldbMESxyz]'?2?|[RUFLDBrufldbMESxyz]w'?2?))*$/;
-    if (!wcaRegex.test(scrambleInput.trim())) {
+    if (!wcaRegex.test(scramble.trim())) {
       toast({ title: 'Invalid Scramble', description: 'Please check your WCA notation.', variant: 'destructive' });
       return;
     }
@@ -60,11 +61,11 @@ export function SidebarContent() {
     toast({ title: 'Generating Solution...', description: `Using the ${solvingMethod} method.` });
 
     try {
-      const result = await generateSolution({ scramble: scrambleInput, solvingMethod });
+      const result = await generateSolution({ scramble: scramble, solvingMethod });
       setSolution(result.solution.split(' '));
       setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
       setStatus('solved');
-      addScrambleToHistory(scrambleInput);
+      addScrambleToHistory(scramble);
       toast({ title: 'Solution Found!', description: 'The solution is ready to be animated.', variant: 'default' });
     } catch (error) {
       console.error(error);
@@ -75,7 +76,7 @@ export function SidebarContent() {
 
   const handleScramble = () => {
     const newScramble = generateScramble();
-    setScrambleInput(newScramble);
+    setScramble(newScramble);
     setCubeConfig('UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB');
     setStatus('scrambled');
     addScrambleToHistory(newScramble);
@@ -109,8 +110,8 @@ export function SidebarContent() {
                       <Textarea 
                         id="scramble" 
                         placeholder="e.g., R U R' U' F2 D'..."
-                        value={scrambleInput}
-                        onChange={(e) => setScrambleInput(e.target.value)}
+                        value={scramble}
+                        onChange={(e) => setScramble(e.target.value)}
                         rows={3}
                       />
                     </div>
@@ -127,7 +128,7 @@ export function SidebarContent() {
                           </div>
                         </div>
                     </RadioGroup>
-                    <Button onClick={handleGenerateSolution} disabled={status === 'solving' || !scrambleInput} className="w-full">
+                    <Button onClick={handleGenerateSolution} disabled={status === 'solving' || !scramble} className="w-full">
                         {status === 'solving' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                         Generate Solution
                     </Button>
@@ -150,7 +151,7 @@ export function SidebarContent() {
                     {scrambleHistory.map((scramble, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <p className="text-xs font-mono p-2 bg-muted rounded-md truncate flex-1">{scramble}</p>
-                        <Button variant="ghost" size="sm" onClick={() => setScrambleInput(scramble)}>Use</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setScramble(scramble)}>Use</Button>
                       </div>
                     ))}
                   </div>

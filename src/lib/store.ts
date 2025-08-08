@@ -32,6 +32,7 @@ interface CubeState {
   status: AppStatus;
   cubeConfig: string | null;
   solution: string[];
+  scramble: string;
   solvingMethod: SolvingMethod;
   cubeType: CubeType;
   colorScheme: ColorScheme;
@@ -40,6 +41,7 @@ interface CubeState {
   setStatus: (status: AppStatus) => void;
   setCubeConfig: (config: string) => void;
   setSolution: (solution: string[]) => void;
+  setScramble: (scramble: string) => void;
   setSolvingMethod: (method: SolvingMethod) => void;
   setCubeType: (type: CubeType) => void;
   setColorScheme: (scheme: Partial<ColorScheme>) => void;
@@ -54,6 +56,7 @@ export const useCubeStore = create<CubeState>()(
       status: 'idle',
       cubeConfig: SOLVED_CUBE_CONFIG,
       solution: [],
+      scramble: '',
       solvingMethod: 'beginner',
       cubeType: '3x3',
       colorScheme: defaultColors,
@@ -62,6 +65,7 @@ export const useCubeStore = create<CubeState>()(
       setStatus: (status) => set({ status }),
       setCubeConfig: (config) => set({ cubeConfig: config }),
       setSolution: (solution) => set({ solution }),
+      setScramble: (scramble) => set({ scramble }),
       setSolvingMethod: (method) => set({ solvingMethod: method }),
       setCubeType: (type) => set({ cubeType: type }),
       setColorScheme: (scheme) => set((state) => ({ colorScheme: { ...state.colorScheme, ...scheme } })),
@@ -78,6 +82,7 @@ export const useCubeStore = create<CubeState>()(
           status: 'ready',
           solution: [],
           cubeConfig: SOLVED_CUBE_CONFIG,
+          scramble: '',
         });
       }
     }),
